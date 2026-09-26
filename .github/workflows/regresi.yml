@@ -32,3 +32,36 @@ jobs:
         run: python -m pip install --quiet pytest
       - name: Suite integrasi Hermes (bootstrap + plugin registration)
         run: python -m pytest tests/hermes/ -q
+
+  # Suite harness-agnostic yang lolos uji lokal fork (27 Sep 2026): shell-lint,
+  # diagnosing (46/46), hooks, systematic-debugging. Ditiadakan: writing-skills
+  # (butuh graphviz), version-bump (butuh yq), explicit-skill-requests (butuh API model),
+  # suite harness spesifik (claude-code/codex/devin/kimi/opencode/pi/antigravity).
+  bash-suite:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: shell-lint (semua .sh termasuk start-server.sh yang di-patch)
+        run: bash tests/shell-lint/test-lint-shell.sh
+      - name: diagnosing-superpowers (struktur skill)
+        run: bash tests/diagnosing-superpowers/test-skill-structure.sh
+      - name: hooks (session-start)
+        run: bash tests/hooks/test-session-start.sh
+      - name: systematic-debugging (find-polluter)
+        run: bash tests/systematic-debugging/test-find-polluter.sh
+
+  # branding.test.js:
+  #   - PASS utk SUPERPOWERS_DISABLE_TELEMETRY=true (keputusan fork kita).
+  #   - Env CI bersih → test "by default" juga lulus (7/7); di sesi lokal
+  #     var .env membocorkan disable=true → 3 gagal palsu (env bleed, bukan kode).
+  node-suite:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install test deps (ws)
+        run: npm install --prefix tests/brainstorm-server --no-audit --no-fund
+      - name: brainstorm-server suite (branding + lifecycle + start/stop server)
+        run: cd tests/brainstorm-server && npm test
