@@ -1,5 +1,11 @@
 # Superpowers
 
+> **Fork:** [`diluviumm/superpowers`](https://github.com/diluviumm/superpowers) — fork ini
+> diintegrasikan sebagai plugin native Hermes Agent, dengan divergensi kecil yang disengaja
+> (lihat [FORK-NOTES.md](FORK-NOTES.md)): fix warning discovery Hermes, CI regresi fork,
+> skill `hermes-plugin-dev`, dan telemetry visual companion OFF by default.
+> Versi kanonik upstream: [`obra/superpowers`](https://github.com/obra/superpowers).
+
 Superpowers is a complete software development methodology for your coding agents, built on top of a set of composable skills and some initial instructions that make sure your agent uses them.
 
 ## Table of Contents

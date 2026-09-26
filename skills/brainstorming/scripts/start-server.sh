@@ -19,6 +19,11 @@
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
+# Fork policy (diluviumm/superpowers): telemetry visual companion OFF by default.
+# server.cjs membaca SUPERPOWERS_DISABLE_TELEMETRY via isTruthyEnv(); nilai eksplisit
+# dari environment tetap dihormati. Detail: FORK-NOTES.md.
+export SUPERPOWERS_DISABLE_TELEMETRY="${SUPERPOWERS_DISABLE_TELEMETRY:-true}"
+
 # Parse arguments
 PROJECT_DIR=""
 FOREGROUND="false"
