@@ -54,6 +54,22 @@ env -u LD_LIBRARY_PATH -u LD_PRELOAD hermes plugins install diluviumm/superpower
 env -u LD_LIBRARY_PATH -u LD_PRELOAD hermes plugins install diluviumm/superpowers --enable --force --ref <sha>
 ```
 
+> ⚠️ **Jebakan pin `--ref` (terpuji 26 Sep 2026 lewat uji rollback):** `--ref` men-set
+> **pin permanen** di `~/.hermes/plugins/.install-metadata.json` (`pinned: true`, revisi
+> dikunci). Install biasa berikutnya akan **menahan sha lama** — retention logic
+> `hermes_cli/plugins_cmd_install.py:308` ("Reinstalling the same pinned source retains
+> its pin") — sehingga update cron bisa terkunci diam-diam. Tidak ada perintah `unpin`;
+> jalur resminya **hapus + pasang ulang**:
+>
+> ```bash
+> cp ~/.hermes/plugins/.install-metadata.json ~/.hermes/plugins/.install-metadata.json.bak
+> hermes plugins remove superpowers
+> hermes plugins install diluviumm/superpowers --enable --force
+> ```
+>
+> Verifikasi selesai: metadata `pinned: false` **dan** `installed == fork_tip`
+> (`bash ~/.hermes/scripts/superpowers-fork-monitor.sh`).
+
 ## Catatan lingkungan
 
 - Dari sesi Termic: bungkus `git`/`hermes` dengan `env -u LD_LIBRARY_PATH` (LD leak AppImage).
