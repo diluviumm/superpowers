@@ -35,7 +35,7 @@ Sumber divergensi: `git diff upstream/main..main` (selalu berisi HANYA item di b
 
 | Komponen | Peran |
 |---|---|
-| Cron `superpowers-fork-sync` (`8a2efee68286`, harian 05:15) | Sync upstream → guard+pytest → push → reinstall plugin → verifikasi 4 langkah |
+| Cron `superpowers-fork-sync` (`8a2efee68286`, harian 05:15) | Sync upstream → guard+pytest → push → reinstall plugin → verifikasi 6 butir (a–f) + laporan wajib per-butir |
 | Monitor `~/.hermes/scripts/superpowers-fork-monitor.sh` | Output deterministik `behind=… fork_tip=… installed=… muse_repo=… muse_installed=…` — agent hanya terbangun saat status BERUBAH |
 | Hook `pre_llm_call` plugin | Inject bootstrap `using-superpowers` otomatis turn pertama tiap sesi Hermes baru |
 
