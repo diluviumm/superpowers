@@ -92,6 +92,10 @@ check "test-helpers smoke (source + assert tanpa claude)" bash -c '
   assert_count "$o" "beta" 2 smoke >/dev/null || exit 4
 '
 
+echo "== Suite tool-tambahan (yq & graphviz user-level) =="
+check "version-bump suite (butuh yq)" bash tests/version-bump/test-bump-version.sh
+check "writing-skills render-graphs (butuh dot)" bash tests/writing-skills/test-render-graphs.sh
+
 echo
 echo "=================================================="
 printf 'HASIL: %d lulus, %d gagal (total %d)\n' "$PASS" "$FAIL" "$((PASS + FAIL))"

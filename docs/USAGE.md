@@ -15,7 +15,7 @@ flowchart TD
         MAIN["branch main<br/>5 kommit divergensi + fix"]
         GUARD["scripts/fork-guard.py<br/>larangan .muse-plugin + validasi"]
         CI[".github/workflows/regresi.yml<br/>5 job CI (push/PR)"]
-        FC["scripts/fork-check.sh<br/>21 checks lokal satu perintah"]
+        FC["scripts/fork-check.sh<br/>23 checks lokal satu perintah"]
         DOC["FORK-NOTES.md + docs/USAGE.md"]
     end
     subgraph AUTO["Otomasi Hermes (zero-touch)"]
@@ -79,7 +79,7 @@ bash ~/.hermes/scripts/superpowers-reinstall.sh <tag-atau-sha-40-char>
 bash ~/.hermes/scripts/superpowers-fork-monitor.sh
 hermes plugins doctor superpowers
 python3 scripts/fork-guard.py
-bash scripts/fork-check.sh          # baterai penuh, 21 checks
+bash scripts/fork-check.sh          # baterai penuh, 23 checks
 ```
 
 ### Membaca output monitor
@@ -133,6 +133,13 @@ sequenceDiagram
 bash scripts/fork-check.sh
 ```
 
+### Tool pendukung (terpasang user-level, tanpa root)
+
+| Tool | Versi | Lokasi | Cara pasang ulang bila hilang |
+|---|---|---|---|
+| `yq` | v4.54.1 (**sha256** `8e34fc29…0ea5f`, cocok checksum resmi rilis) | `~/.local/bin/yq` | unduh `yq_linux_amd64` dari rilis mikefarah/yq → cek `checksums` → taruh di `~/.local/bin` |
+| `dot` (graphviz) | 16.1.0 (+ `gts` untuk plugin neato) | prefix `~/.local/graphviz/` + wrapper `~/.local/bin/dot` | ekstrak paket Arch `graphviz`/`gts` (mirror TUNA cepat) ke prefix → `dot -c` untuk regen config → tulis wrapper (set `LD_LIBRARY_PATH` + exec) |
+
 | Lokasi suite | Isi (jumlah) | `fork-check` | CI `regresi-fork` | Catatan |
 |---|---|---|---|---|
 | `scripts/fork-guard.py` + `lint-shell.sh --all` | guard divergensi + lint semua `.sh` ter-track | ✅ (2 check) | ✅ `fork-guard` / `bash-suite` | |
@@ -148,11 +155,11 @@ bash scripts/fork-check.sh
 | `tests/pi/` | extension **6** test | ✅ | ✅ `harness-suites` (Node 24) | butuh native TS type-stripping |
 | `tests/claude-code/` **statis**: sdd-workspace, worktree-path-policy, executing-plans + smoke `test-helpers` | 4 check | ✅ | ❌ | murni bash, tanpa CLI `claude` |
 | `tests/claude-code/` **integrasi**: subagent-driven-development ×2, worktree-native-preference, `run-skill-tests.sh` | jalankan `claude` CLI | ❌ | ❌ | CLI `claude` tidak ada di mesin ini |
-| `tests/writing-skills/` | butuh `dot` (graphviz) | ❌ | ❌ | tool tidak terinstall |
-| `tests/version-bump/` | butuh `yq` | ❌ | ❌ | tool tidak terinstall |
-| `tests/explicit-skill-requests/` | butuh API model | ❌ | ❌ | panggilan model |
+| `tests/writing-skills/` | butuh `dot` (graphviz) — **kini AKTIF** | ✅ | ✅ `bash-suite` | graphviz 16.1.0 user-level + wrapper `dot` |
+| `tests/version-bump/` | butuh `yq` — **kini AKTIF** | ✅ | ✅ `bash-suite` | yq v4.54.1 (sha256-verified) di `~/.local/bin` |
+| `tests/explicit-skill-requests/` | jalankan `claude -p` | ❌ | ❌ | CLI `claude` tidak ada di mesin ini |
 
-`fork-check.sh` = **21 checks** (baris ✅ di atas; suite ❌ sengaja dikecualikan dengan
+`fork-check.sh` = **23 checks** (baris ✅ di atas; suite ❌ sengaja dikecualikan dengan
 alasan tool/layanan, bukan karena gagal).
 
 ---
@@ -211,7 +218,7 @@ Aturan wajib:
 
 | Perintah | Fungsi |
 |---|---|
-| `bash scripts/fork-check.sh` | verifikasi lokal penuh (21 checks) |
+| `bash scripts/fork-check.sh` | verifikasi lokal penuh (23 checks) |
 | `bash ~/.hermes/scripts/superpowers-fork-monitor.sh` | status sinkron 5 field |
 | `bash ~/.hermes/scripts/superpowers-reinstall.sh` | reinstall/rollback resmi |
 | `hermes plugins doctor superpowers` | kesehatan plugin di Hermes |
