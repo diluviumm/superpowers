@@ -26,16 +26,28 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+// Ambient telemetry opt-outs (shell, IDE, harness) must never leak into tests
+// that assert DEFAULT behavior — only the explicit per-test `env` override may
+// set them. Keeps "by default" assertions deterministic in every environment.
+const TELEMETRY_OPT_OUT_VARS = [
+  'SUPERPOWERS_DISABLE_TELEMETRY',
+  'DISABLE_TELEMETRY',
+  'CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC'
+];
+
 function startServer({ port, dir, env = {}, serverPath = SERVER_PATH }) {
   cleanup(dir);
+  const baseEnv = {
+    ...process.env,
+    BRAINSTORM_PORT: String(port),
+    BRAINSTORM_DIR: dir,
+    BRAINSTORM_TOKEN: TOKEN
+  };
+  for (const key of TELEMETRY_OPT_OUT_VARS) {
+    if (!(key in env)) delete baseEnv[key];
+  }
   return spawn('node', [serverPath], {
-    env: {
-      ...process.env,
-      BRAINSTORM_PORT: String(port),
-      BRAINSTORM_DIR: dir,
-      BRAINSTORM_TOKEN: TOKEN,
-      ...env
-    }
+    env: { ...baseEnv, ...env }
   });
 }
 

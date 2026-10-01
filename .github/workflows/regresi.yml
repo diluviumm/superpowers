@@ -52,8 +52,8 @@ jobs:
 
   # branding.test.js:
   #   - PASS utk SUPERPOWERS_DISABLE_TELEMETRY=true (keputusan fork kita).
-  #   - Env CI bersih → test "by default" juga lulus (7/7); di sesi lokal
-  #     var .env membocorkan disable=true → 3 gagal palsu (env bleed, bukan kode).
+  #   - Test "by default" kini STRIP var opt-out telemetry dari env ambien
+  #     (fix 1 Okt 2026) → deterministik di CI dan lokal, berapa pun env shell.
   node-suite:
     runs-on: ubuntu-latest
     steps:
@@ -65,3 +65,30 @@ jobs:
         run: npm install --prefix tests/brainstorm-server --no-audit --no-fund
       - name: brainstorm-server suite (branding + lifecycle + start/stop server)
         run: cd tests/brainstorm-server && npm test
+
+  # Suite harness lintas-agen yang lolos uji lokal fork (1 Okt 2026) —
+  # ringan, tanpa dependensi eksternal di luar tool bawaan runner.
+  # Perluas daftar ini hanya bila suite lolos lokal DAN di CI.
+  harness-suites:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: opencode (bootstrap-caching + plugin-loading)
+        run: |
+          bash tests/opencode/test-bootstrap-caching.sh
+          bash tests/opencode/test-plugin-loading.sh
+      - name: kimi + devin + antigravity manifests
+        run: |
+          bash tests/kimi/test-plugin-manifest.sh
+          bash tests/devin/test-devin-plugin.sh
+          bash tests/antigravity/test-antigravity-tools.sh
+      - name: codex (marketplace + package-archive + plugin-sync)
+        run: |
+          bash tests/codex/test-marketplace-manifest.sh
+          bash tests/codex/test-package-codex-plugin.sh
+          bash tests/codex-plugin-sync/test-sync-to-codex-plugin.sh
+      - name: pi extension
+        run: node tests/pi/test-pi-extension.mjs

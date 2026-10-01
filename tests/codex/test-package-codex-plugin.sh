@@ -225,7 +225,28 @@ archive_from_zip_source="$TEST_ROOT/superpowers-from-zip-source.zip"
 (
   cd "$metadata_source"
   tar -czf "$metadata_archive" .
-  zip -X -q -r "$metadata_zip" .
+  if command -v zip >/dev/null; then
+    zip -X -q -r "$metadata_zip" .
+  else
+    # Fixture zip needs no determinism guarantees — only a valid archive the
+    # packaging script can read. Mirrors the script's zip-free fallback.
+    python3 - "$metadata_zip" <<'PY'
+import os
+import sys
+import zipfile
+
+entries = []
+for root, dirs, files in os.walk("."):
+    dirs.sort()
+    files.sort()
+    entries += [os.path.join(root, name) for name in dirs]
+    entries += [os.path.join(root, name) for name in files]
+
+with zipfile.ZipFile(sys.argv[1], "w") as archive:
+    for path in sorted(entries):
+        archive.write(path, os.path.relpath(path, "."))
+PY
+  fi
 )
 
 if output="$("$SCRIPT_UNDER_TEST" --allow-dirty --metadata-source "$metadata_archive" --output "$archive_from_tar_source" 2>&1)"; then

@@ -661,6 +661,11 @@ function startServer() {
   let triedFallback = false;
 
   function onListen() {
+    // Idle tracking starts when the server can actually accept connections:
+    // module-load/boot time must not count toward the idle budget — with short
+    // timeouts, a slow boot made shutdown race the first client's connect
+    // (WS handshake hit a server already inside its idle-shutdown path).
+    touchActivity();
     // Cookie name keys on the ACTUAL bound port (may differ from the preferred
     // one after an EADDRINUSE fallback) so it can't collide with another server's
     // cookie in the shared localhost jar.

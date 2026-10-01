@@ -136,8 +136,13 @@ command -v tar >/dev/null || die "tar not found in PATH"
 command -v gzip >/dev/null || die "gzip not found in PATH"
 command -v shasum >/dev/null || die "shasum not found in PATH"
 if [[ "$FORMAT" == "zip" ]]; then
-  command -v zip >/dev/null || die "zip not found in PATH"
   command -v unzip >/dev/null || die "unzip not found in PATH"
+  # zip is preferred but optional: a deterministic python3 zipfile fallback
+  # keeps packaging working on hosts without the zip binary (e.g. minimal
+  # containers, Nix-style PATHs). At least one creator must exist.
+  if ! command -v zip >/dev/null && ! command -v python3 >/dev/null; then
+    die "need either zip or python3 in PATH to create zip archives"
+  fi
 fi
 
 [[ -d "$REPO_ROOT/.git" ]] || die "repo root is not a git checkout: $REPO_ROOT"
@@ -296,7 +301,43 @@ case "$FORMAT" in
     (
       cd "$STAGE"
       rm -f "$OUTPUT"
-      COPYFILE_DISABLE=1 zip -X -q - -@ <"$ARCHIVE_LIST" >"$OUTPUT"
+      if command -v zip >/dev/null; then
+        # TZ=UTC so Info-ZIP's localtime conversion of the touched mtimes
+        # always yields the canonical (1980,1,1,0,0,0) DOS timestamps,
+        # regardless of the builder's timezone.
+        COPYFILE_DISABLE=1 TZ=UTC zip -X -q - -@ <"$ARCHIVE_LIST" >"$OUTPUT"
+      else
+        # Deterministic fallback (no zip binary): fixed DOS timestamps,
+        # canonical unix modes, entries emitted in ARCHIVE_LIST order.
+        COPYFILE_DISABLE=1 python3 - "$STAGE" "$ARCHIVE_LIST" "$OUTPUT" <<'PY'
+import os
+import sys
+import zipfile
+
+stage, archive_list, output = sys.argv[1], sys.argv[2], sys.argv[3]
+EPOCH = (1980, 1, 1, 0, 0, 0)
+
+with zipfile.ZipFile(output, "w") as archive:
+    with open(archive_list, encoding="utf-8") as handle:
+        for raw in handle:
+            name = raw.rstrip("\n")
+            if not name:
+                continue
+            full = os.path.join(stage, name)
+            info = zipfile.ZipInfo.from_file(full, arcname=name)
+            info.date_time = EPOCH
+            if os.path.isdir(full):
+                # Trailing slash is what marks the entry as a directory for
+                # unzip — external dir bits alone are not honored on extract.
+                info.filename = name + "/"
+                info.compress_type = zipfile.ZIP_STORED
+                archive.writestr(info, b"")
+            else:
+                info.compress_type = zipfile.ZIP_DEFLATED
+                with open(full, "rb") as src:
+                    archive.writestr(info, src.read())
+PY
+      fi
     )
     ;;
   tar.gz)

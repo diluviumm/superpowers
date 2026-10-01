@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Regression check: Superpowers should not route new worktrees through the old
 # global worktree directory.
+#
+# shellcheck disable=SC2088  # assertions match the LITERAL "~/..." text inside
+# skill files; expanding to $HOME would compare a different string.
 
 set -euo pipefail
 

@@ -17,7 +17,15 @@ Sumber divergensi: `git diff upstream/main..main` (selalu berisi HANYA item di b
 | 2 | `skills/hermes-plugin-dev/` | **skill baru** | Distilasi lokal cara menulis/memodifikasi plugin Hermes (manifest, kontrak `register()`, injeksi `pre_llm_call`, jalur update/rollback). Folder baru → konflik merge nol. |
 | 3 | `.github/workflows/regresi.yml` + `scripts/fork-guard.py` | **CI + guard baru** | Upstream tidak punya CI sama sekali. Workflow ini khusus fork: pytest `tests/hermes/` + guard divergensi + lint frontmatter. |
 | 4 | `skills/brainstorming/scripts/start-server.sh` | +2 baris default env | `export SUPERPOWERS_DISABLE_TELEMETRY="${SUPERPOWERS_DISABLE_TELEMETRY:-true}"` — telemetry (logo primeradiant.com, bawa versi) OFF by default di fork ini; nilai eksplisit tetap dihormati (dibaca `server.cjs` via `isTruthyEnv`). |
-| 5 | `README.md` | banner 4 baris di atas | Penanda fork + tautan ke dokumen ini. |
+| 5 | `README.md` | banner 4 baris di atas + badge CI/Lisensi + tautan USAGE | Penanda fork + tautan ke dokumen ini. |
+| 6 | `tests/brainstorm-server/branding.test.js` | test strip var opt-out telemetry dari env ambien (1 Okt 2026) | Sebelumnya 3 test "by default" gagal palsu di sesi dengan `SUPERPOWERS_DISABLE_TELEMETRY=true` (env bleed). Kini deterministik di CI & lokal; override eksplisit per-test tetap dihormati. |
+| 7 | `scripts/package-codex-plugin.sh` + `tests/codex/test-package-codex-plugin.sh` | zip jadi opsional + fallback `python3 zipfile` deterministik (timestamp 1980-01-01, mode kanonik, urutan ARCHIVE_LIST) + jalur `zip` dibungkus `TZ=UTC` | Host tanpa binari `zip` (sebagian besar minimal/container) kini tetap bisa packaging; path Info-ZIP asli kebal selisih timezone. Fixture test ikut fallback serupa. |
+| 8 | `.hermes-plugin/__init__.py` | pesan reinstall menunjuk `diluviumm/superpowers --enable --force` | Pesan `obra/superpowers` menyesatkan di konteks fork (bisa memasang versi upstream dan menghilangkan fix). |
+| 9 | `.github/workflows/regresi.yml` | (lanjutan baris 3) job `harness-suites` ditambahkan; komentar env-bleed diperbarui | 9 suite harness ringan (opencode/kimi/devin/antigravity/codex/pi) kini ikut CI — 5 job total. |
+| 10 | `docs/USAGE.md` (baru) | panduan penggunaan lengkap + 2 diagram mermaid (arsitektur, sequence sync) | Tata cara pakai, tabel field monitor, troubleshooting, batasan yang diketahui. |
+| 11 | `scripts/fork-check.sh` (baru) | baterai verifikasi lokal satu perintah (17 checks, exit 0/1) | Jalur bukti cepat sebelum push / setelah sync; lint otomatis oleh `lint-shell.sh --all`. |
+| 12 | `skills/brainstorming/scripts/server.cjs` + `tests/brainstorm-server/lifecycle.test.js` | `touchActivity()` di `onListen()` + margin test idle 200→600ms | **Fix race nyata**: `lastActivity` di-set saat evaluasi modul → boot node (250-400ms) memakan budget idle → server bisa `idle timeout` SEBELUM/bareng koneksi pertama (ter-reproduksi: WS ECONNREFUSED/ECONNRESET saat handshake). Idle kini dihitung dari server siap; test 6/6 hijau (sebelumnya flaky ~1/3). |
+| 13 | `skills/subagent-driven-development/scripts/sdd-workspace`, `tests/claude-code/{test-helpers.sh,test-subagent-driven-development-integration.sh,test-worktree-path-policy.sh}` | bersih-bersih baseline shellcheck (13 warning → 0) | `CDPATH=''` (idiom eksplisit), pisah `local x=$(…)` (SC2155), trap single-quote (SC2064), directive SC2088 (tilde literal disengaja), dan **fix bug nyata**: pesan `exit code: $?` di blok `||` selalu melaporkan 0 karena `$?` sudah terlanjur di-`echo` (kini `pipeline_status=$?` ditangkap di baris pertama). |
 
 ## Kebijakan sync dengan upstream
 
@@ -35,7 +43,7 @@ Sumber divergensi: `git diff upstream/main..main` (selalu berisi HANYA item di b
 
 | Komponen | Peran |
 |---|---|
-| Cron `superpowers-fork-sync` (`8a2efee68286`, harian 05:15) | Sync upstream → guard+pytest → push → reinstall plugin → verifikasi 6 butir (a–f) + laporan wajib per-butir |
+| Cron `superpowers-fork-sync` (`8a2efee68286`, harian 05:15) | Sync upstream → guard+pytest → push → reinstall plugin → verifikasi 7 butir (a–g) + laporan wajib per-butir |
 | Monitor `~/.hermes/scripts/superpowers-fork-monitor.sh` | Output deterministik `behind=… fork_tip=… installed=… muse_repo=… muse_installed=…` — agent hanya terbangun saat status BERUBAH |
 | Hook `pre_llm_call` plugin | Inject bootstrap `using-superpowers` otomatis turn pertama tiap sesi Hermes baru |
 
@@ -46,6 +54,9 @@ Sumber divergensi: `git diff upstream/main..main` (selalu berisi HANYA item di b
 hermes plugins doctor superpowers
 hermes plugins list | grep superpowers
 bash ~/.hermes/scripts/superpowers-fork-monitor.sh
+
+# baterai verifikasi lokal penuh (17 checks — guard, pytest, semua suite)
+bash ~/me/github/superpowers/scripts/fork-check.sh
 
 # update dari fork (install --force; subcommand 'update' diblokir security scan)
 env -u LD_LIBRARY_PATH -u LD_PRELOAD hermes plugins install diluviumm/superpowers --enable --force
@@ -75,3 +86,9 @@ env -u LD_LIBRARY_PATH -u LD_PRELOAD hermes plugins install diluviumm/superpower
 - Dari sesi Termic: bungkus `git`/`hermes` dengan `env -u LD_LIBRARY_PATH` (LD leak AppImage).
 - Keterbatasan upstream yang diketahui: Hermes tidak punya post-compaction hook —
   sesi yang mengalami kompaksi setelah turn pertama kehilangan bootstrap → sesi baru.
+- Keterbatasan hulu #2 (terverifikasi di kode v0.21.5, 1 Okt 2026): `hermes serve`
+  / `dashboard` tidak menjalankan plugin discovery saat startup
+  (`_AGENT_COMMANDS` tanpa `serve`; `start_server()` tanpa `discover_plugins()`)
+  → hook `pre_llm_call` plugin tidak fire di giliran web/desktop-backend
+  (NousResearch/hermes-agent#102592). TUI/`hermes chat` normal. Perbaikannya milik
+  repo Hermes, bukan fork ini.
