@@ -10,6 +10,12 @@
 set -uo pipefail
 cd "$(dirname "$0")/.." || exit 1
 
+# Self-heal PATH: shell non-interaktif (proses Python/agent) kadang tanpa direktori
+# perl — `shasum` (prereq packaging codex) hidup di /usr/bin/core_perl. Tanpa ini
+# baterai gagal prematur hanya karena PATH, bukan karena kode.
+command -v shasum >/dev/null 2>&1 \
+  || export PATH="$PATH:/usr/bin/core_perl:/usr/bin/site_perl:/usr/bin/vendor_perl"
+
 PASS=0
 FAIL=0
 FAILED=()

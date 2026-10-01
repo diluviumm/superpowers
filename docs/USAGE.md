@@ -188,6 +188,7 @@ Aturan wajib:
 | Warning `plugin.json declares an unsupported…` | `.muse-plugin/plugin.json` balik terdeteksi | **jangan dipulihkan**; jalankan `fork-guard` → hapus file itu |
 | Test branding gagal "logo by default" | var telemetry ambien bocor ke test | sudah difix (strip otomatis); jalankan ulang `npm test` |
 | `zip not found` saat packaging Codex | host tanpa binari `zip` | sudah difix: fallback `python3 zipfile` deterministik |
+| `shasum not found in PATH` di shell non-interaktif | `shasum` di `/usr/bin/core_perl` — masuk PATH shell interaktif, tidak di proses Python/agent | `fork-check.sh` kini self-heal PATH; manual: `export PATH="$PATH:/usr/bin/core_perl"` |
 | Bootstrap `using-superpowers` hilang di sesi baru | sesi terkena kompaksi setelah turn pertama | buat sesi baru (keterbatasan Hermes, belum ada hook post-compaction) |
 | Hook tidak fire di `hermes serve` / dashboard | plugin discovery dilewati di jalur serve (issue Hermes #102592, terverifikasi ada di kode v0.21.5) | pakai `hermes chat` / TUI; perbaikan milik hulu Hermes |
 
