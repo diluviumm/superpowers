@@ -14,7 +14,16 @@ PASS=0
 FAIL=0
 FAILED=()
 LOG_DIR="$(mktemp -d "${TMPDIR:-/tmp}/fork-check.XXXXXX")"
-trap 'rm -rf "$LOG_DIR"' EXIT
+# Simpan log HANYA saat hijau; saat gagal, log suite dipertahankan + path dicetak
+# agar kegagalan langsung terdiagnosis (kejadian transient jadi bukti, bukan tebakan).
+cleanup_logs() {
+  if ((FAIL == 0)); then
+    rm -rf "$LOG_DIR"
+  else
+    echo "log kegagalan disimpan di: $LOG_DIR" >&2
+  fi
+}
+trap cleanup_logs EXIT
 
 check() {
   local name="$1"
