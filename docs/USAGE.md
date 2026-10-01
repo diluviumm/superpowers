@@ -98,7 +98,7 @@ bash scripts/fork-check.sh          # baterai penuh, 17 checks
 
 | Komponen | jadwal/trigger | peran |
 |---|---|---|
-| cron `superpowers-fork-sync` | harian 05:15 | fetch → ff-only merge → guard+pytest → push → reinstall bila basi → verifikasi (a)–(g) |
+| cron `superpowers-fork-sync` | harian 05:15 | fetch → ff-only merge → guard+pytest → push → reinstall bila basi → verifikasi (a)–(h) termasuk baterai `fork-check.sh` harian |
 | monitor `superpowers-fork-monitor.sh` | dipanggil cron | output deterministik; agent hanya terbangun saat status BERUBAH |
 | CI `regresi-fork` | setiap push/PR ke `main` | 5 job: fork-guard, hermes-tests, bash-suite, node-suite, harness-suites |
 | hook `pre_llm_call` | turn pertama tiap sesi | inject bootstrap `using-superpowers` |
