@@ -15,7 +15,7 @@ flowchart TD
         MAIN["branch main<br/>5 kommit divergensi + fix"]
         GUARD["scripts/fork-guard.py<br/>larangan .muse-plugin + validasi"]
         CI[".github/workflows/regresi.yml<br/>5 job CI (push/PR)"]
-        FC["scripts/fork-check.sh<br/>17 checks lokal satu perintah"]
+        FC["scripts/fork-check.sh<br/>21 checks lokal satu perintah"]
         DOC["FORK-NOTES.md + docs/USAGE.md"]
     end
     subgraph AUTO["Otomasi Hermes (zero-touch)"]
@@ -79,7 +79,7 @@ bash ~/.hermes/scripts/superpowers-reinstall.sh <tag-atau-sha-40-char>
 bash ~/.hermes/scripts/superpowers-fork-monitor.sh
 hermes plugins doctor superpowers
 python3 scripts/fork-guard.py
-bash scripts/fork-check.sh          # baterai penuh, 17 checks
+bash scripts/fork-check.sh          # baterai penuh, 21 checks
 ```
 
 ### Membaca output monitor
@@ -100,7 +100,8 @@ bash scripts/fork-check.sh          # baterai penuh, 17 checks
 |---|---|---|
 | cron `superpowers-fork-sync` | harian 05:15 | fetch → ff-only merge → guard+pytest → push → reinstall bila basi → verifikasi (a)–(h) termasuk baterai `fork-check.sh` harian |
 | monitor `superpowers-fork-monitor.sh` | dipanggil cron | output deterministik; agent hanya terbangun saat status BERUBAH |
-| CI `regresi-fork` | setiap push/PR ke `main` | 5 job: fork-guard, hermes-tests, bash-suite, node-suite, harness-suites |
+| CI `regresi-fork` | setiap push/PR ke `main` | 5 job: fork-guard, hermes-tests, bash-suite, node-suite, harness-suites (semua `uses:` ter-pin SHA + `concurrency` batal-otomatis) |
+| Dependabot `github-actions` | mingguan | PR otomatis saat action rilis baru — diuji CI regresi-fork (trigger `pull_request`) sebelum merge |
 | hook `pre_llm_call` | turn pertama tiap sesi | inject bootstrap `using-superpowers` |
 
 ### Sequence: sync harian
@@ -118,7 +119,7 @@ sequenceDiagram
         C->>G: fork-guard + pytest
         C->>O: push origin main
         C->>P: superpowers-reinstall.sh
-        C->>C: verifikasi (a)-(g) + laporan
+        C->>C: verifikasi (a)-(h) + laporan
     else behind = 0
         C->>C: [SILENT] (tanpa laporan)
     end
@@ -132,17 +133,27 @@ sequenceDiagram
 bash scripts/fork-check.sh
 ```
 
-| Grup | Checks | Setara CI? |
-|---|---|---|
-| Struktur & guard | fork-guard, shell lint (semua `.sh`) | ✅ job `fork-guard` + `bash-suite` |
-| Suite Hermes | pytest `tests/hermes/` (19 test) | ✅ job `hermes-tests` |
-| Suite bash | shell-lint, diagnosing (46), hooks, systematic-debugging | ✅ job `bash-suite` |
-| Suite node | brainstorm-server (branding, lifecycle, ws, start/stop) | ✅ job `node-suite` |
-| Suite harness | opencode ×2, kimi, devin, antigravity, codex ×3, pi | ✅ job `harness-suites` |
+| Lokasi suite | Isi (jumlah) | `fork-check` | CI `regresi-fork` | Catatan |
+|---|---|---|---|---|
+| `scripts/fork-guard.py` + `lint-shell.sh --all` | guard divergensi + lint semua `.sh` ter-track | ✅ (2 check) | ✅ `fork-guard` / `bash-suite` | |
+| `tests/hermes/` | pytest **19** test | ✅ | ✅ `hermes-tests` | bootstrap + registrasi plugin |
+| `tests/shell-lint/` | uji skrip lint | ✅ | ✅ `bash-suite` | |
+| `tests/diagnosing-superpowers/` | **46** struktur skill | ✅ | ✅ `bash-suite` | |
+| `tests/hooks/` | session-start | ✅ | ✅ `bash-suite` | |
+| `tests/systematic-debugging/` | find-polluter | ✅ | ✅ `bash-suite` | |
+| `tests/brainstorm-server/` | `npm test` **134** test (9 file) | ✅ | ✅ `node-suite` | |
+| `tests/opencode/` | 2 suite (bootstrap-caching, plugin-loading) | ✅ | ✅ `harness-suites` | |
+| `tests/kimi/` · `devin/` · `antigravity/` | manifest per harness | ✅ (3) | ✅ `harness-suites` | |
+| `tests/codex/` (2) + `tests/codex-plugin-sync/` | marketplace, package (**28**), sync | ✅ (3) | ✅ `harness-suites` | package: `zip` opsional (fallback `python3`), wajib `unzip` |
+| `tests/pi/` | extension **6** test | ✅ | ✅ `harness-suites` (Node 24) | butuh native TS type-stripping |
+| `tests/claude-code/` **statis**: sdd-workspace, worktree-path-policy, executing-plans + smoke `test-helpers` | 4 check | ✅ | ❌ | murni bash, tanpa CLI `claude` |
+| `tests/claude-code/` **integrasi**: subagent-driven-development ×2, worktree-native-preference, `run-skill-tests.sh` | jalankan `claude` CLI | ❌ | ❌ | CLI `claude` tidak ada di mesin ini |
+| `tests/writing-skills/` | butuh `dot` (graphviz) | ❌ | ❌ | tool tidak terinstall |
+| `tests/version-bump/` | butuh `yq` | ❌ | ❌ | tool tidak terinstall |
+| `tests/explicit-skill-requests/` | butuh API model | ❌ | ❌ | panggilan model |
 
-Suite yang sengaja **tidak** dijalankan (butuh tool/layanan tambahan):
-`writing-skills` (graphviz), `version-bump` (yq), `explicit-skill-requests`
-(API model), serta suite harness berat spesifik.
+`fork-check.sh` = **21 checks** (baris ✅ di atas; suite ❌ sengaja dikecualikan dengan
+alasan tool/layanan, bukan karena gagal).
 
 ---
 
@@ -199,7 +210,7 @@ Aturan wajib:
 
 | Perintah | Fungsi |
 |---|---|
-| `bash scripts/fork-check.sh` | verifikasi lokal penuh (17 checks) |
+| `bash scripts/fork-check.sh` | verifikasi lokal penuh (21 checks) |
 | `bash ~/.hermes/scripts/superpowers-fork-monitor.sh` | status sinkron 5 field |
 | `bash ~/.hermes/scripts/superpowers-reinstall.sh` | reinstall/rollback resmi |
 | `hermes plugins doctor superpowers` | kesehatan plugin di Hermes |

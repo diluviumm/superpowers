@@ -1,0 +1,13 @@
+# Dependabot version updates — ECOSYSTEM TUNGGAL github-actions.
+# Fork ini nol dependensi paket (package.json tanpa dependencies); actions
+# adalah satu-satunya dependensi eksternal yang bisa diracuni (mutable tag).
+# Semua `uses:` sudah di-pin ke commit SHA + komentar versi; Dependabot
+# membuka PR bila ada versi baru, dan setiap PR otomatis diuji CI regresi-fork
+# (trigger pull_request) sebelum boleh digabung.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5

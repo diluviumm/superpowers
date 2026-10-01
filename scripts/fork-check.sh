@@ -64,6 +64,19 @@ check "codex package-archive" bash tests/codex/test-package-codex-plugin.sh
 check "codex-plugin-sync" bash tests/codex-plugin-sync/test-sync-to-codex-plugin.sh
 check "pi extension" node tests/pi/test-pi-extension.mjs
 
+echo "== Suite claude-code (statis, tanpa CLI claude) =="
+check "claude-code sdd-workspace" bash tests/claude-code/test-sdd-workspace.sh
+check "claude-code worktree-path-policy" bash tests/claude-code/test-worktree-path-policy.sh
+check "claude-code executing-plans" bash tests/claude-code/test-executing-plans-scripts.sh
+check "test-helpers smoke (source + assert tanpa claude)" bash -c '
+  source tests/claude-code/test-helpers.sh
+  d=$(create_test_project); [ -d "$d" ] || exit 1; rm -rf "$d"
+  o=$(printf "alpha\nbeta\nbeta")
+  assert_contains "$o" "beta" smoke >/dev/null || exit 2
+  assert_not_contains "$o" "gamma" smoke >/dev/null || exit 3
+  assert_count "$o" "beta" 2 smoke >/dev/null || exit 4
+'
+
 echo
 echo "=================================================="
 printf 'HASIL: %d lulus, %d gagal (total %d)\n' "$PASS" "$FAIL" "$((PASS + FAIL))"
